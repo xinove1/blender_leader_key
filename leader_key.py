@@ -1,13 +1,12 @@
 """
-File: bl_leader_key.py
+File: leader_key.py
 Author: Adam Wolski
 Email: miniukof@gmail.com
 Github: https://github.com/miniukof
 """
 from time import time
-import bpy
-from bpy.types import Operator, AddonPreferences
-from bpy.props import StringProperty, IntProperty, BoolProperty
+import bpy # pylint: disable=import-error
+
 
 bl_info = {
     'name'        : 'Leader Key',
@@ -18,37 +17,32 @@ bl_info = {
     'category'    : 'User Interface',
 }
 
-# TODO Make those availble to setup in preferences
-TIMEOUT = 1
-WAIT_FOR_NEXT = 0.5
-BINDINGS_NUMBER = 5
+
+# This is ugly workaround.
+# Haven't found good way for dynamically creating settings in user-prefs.
+# So on start create fixed number of properties.
+BINDINGS_MAX = 25
+
 
 class LeaderKey(bpy.types.Operator):
     """Main function call"""
     bl_idname = 'ui.leaderkey'
     bl_label = 'Launch leader key'
 
-    def __init__(self):
-        self.context_type = ''
-        self.context_mode = ''
-        self.key_string = ''
-        self.timeout = 0
-        self.bindings = Bindings()
-
     def invoke(self, context, event):
         user_preferences = context.user_preferences
         addon_prefs = user_preferences.addons[__name__].preferences
-
         self.bindings = Bindings()
         for i in range(addon_prefs.bindings_number):
             exec('self.bindings.append({0}.kstr{1},\
                     {0}.func{1}, {0}.ctype{1}, {0}.cmode{1})'.format(
                         'addon_prefs', i))
-
         self.context_type = context.area.type
         self.context_mode = context.mode
         self.key_string = ''
-        self.timeout = time()
+        self.timestart = time()
+        self.timeout = addon_prefs.timeout
+        self.timenext = addon_prefs.time_for_next
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
@@ -75,11 +69,11 @@ class LeaderKey(bpy.types.Operator):
                                      ctype='',
                                      cmode='')
 
-        if func and time() - self.timeout >= WAIT_FOR_NEXT:
+        if func and time() - self.timestart >= self.timeout:
             exec(func)
             return {'FINISHED'}
 
-        if time() - self.timeout >= TIMEOUT:
+        if time() - self.timestart >= self.timeout:
             return {'FINISHED'}
 
         return {'RUNNING_MODAL'}
@@ -120,67 +114,117 @@ class Bindings:
         except KeyError:
             return None
 
-class LeaderKeyPreferences(AddonPreferences):
+
+CTYPE_ENUM = [('VIEW_3D', 'VIEW_3D', ''),
+              ('TIMELINE', 'TIMELINE', ''),
+              ('GRAPH_EDITOR', 'GRAPH_EDITOR', ''),
+              ('DOPESHEET_EDITOR', 'DOPESHEET_EDITOR', ''),
+              ('NLA_EDITOR', 'NLA_EDITOR', ''),
+              ('IMAGE_EDITOR', 'IMAGE_EDITOR', ''),
+              ('SEQUENCE_EDITOR', 'SEQUENCE_EDITOR', ''),
+              ('CLIP_EDITOR', 'CLIP_EDITOR', ''),
+              ('TEXT_EDITOR', 'TEXT_EDITOR', ''),
+              ('NODE_EDITOR', 'NODE_EDITOR', ''),
+              ('LOGIC_EDITOR', 'LOGIC_EDITOR', ''),
+              ('PROPERTIES', 'PROPERTIES', ''),
+              ('OUTLINER', 'OUTLINER', ''),
+              ('USER_PREFERENCES', 'USER_PREFERENCES', ''),
+              ('INFO', 'INFO', ''),
+              ('FILE_BROWSER', 'FILE_BROWSER', ''),
+              ('CONSOLE', 'CONSOLE', ''),
+              ('', '', '')]
+
+CMODE_ENUM = [('EDIT_MESH', 'EDIT_MESH', ''),
+              ('EDIT_CURVE', 'EDIT_CURVE', ''),
+              ('EDIT_SURFACE', 'EDIT_SURFACE', ''),
+              ('EDIT_TEXT', 'EDIT_TEXT', ''),
+              ('EDIT_ARMATURE', 'EDIT_ARMATURE', ''),
+              ('EDIT_METABALL', 'EDIT_METABALL', ''),
+              ('EDIT_LATTICE', 'EDIT_LATTICE', ''),
+              ('POSE', 'POSE', ''),
+              ('SCULPT', 'SCULPT', ''),
+              ('PAINT_WEIGHT', 'PAINT_WEIGHT', ''),
+              ('PAINT_VERTEX', 'PAINT_VERTEX', ''),
+              ('PAINT_TEXTURE', 'PAINT_TEXTURE', ''),
+              ('PARTICLE', 'PARTICLE', ''),
+              ('OBJECT', 'OBJECT', ''),
+              ('', '', '')]
+
+KEYSTR_DESC = ('String of characters to be used as key binding. For ex: '
+               '"A B C" would mean that after pressing leader key pressing'
+               ' in A, B, C keys in sequence would lead to calling bound '
+               'function.')
+
+FUNC_DESC = 'Function to be used by this key binding'
+
+CTYPE_DESC = ('Type of area in which this key binding is to be used in for ex:'
+              ' "3D_VIEW". Can be left empty, in which case this key binding'
+              ' would not be dependent on current area.')
+
+CMODE_DESC = ('Mode in which this key binding is to be used in for ex: '
+              '"EDIT_MESH". Can be left empty, in which case this key binding'
+              'would not be dependent on current mode.')
+
+
+class LeaderKeyPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
 
 
-    keystr_desc = ('String of characters to be used as key binding. For ex: '
-                   '"A B C" would mean that after pressing leader key pressing in '
-                   'A, B, C keys in sequence would lead to calling bound function.')
+    timeout = \
+        bpy.props.FloatProperty(name="Timeout",
+                                description=("Amount of time for typing keys."
+                                             "In seconds."),
+                                default=1.0,
+                                soft_min=0.01)
 
-    func_desc = 'Function to be used by this key binding'
+    time_for_next = \
+        bpy.props.FloatProperty(name="Wait for next",
+                                description=("Amount of time for which to wait"
+                                             " for next key if matching key is"
+                                             " already found.(second)"),
+                                default=0.5,
+                                soft_min=0.01)
 
-    ctype_desc = ('Type of area in which this key binding is to be used in for ex:'
-                  ' "3D_VIEW". Can be left empty, in which case this key binding'
-                  ' would not be dependent on current area. \nAvailible types:'
-                  ' ‘VIEW_3D’, ‘TIMELINE’, ‘GRAPH_EDITOR’, ‘DOPESHEET_EDITOR’,'
-                  ' ‘NLA_EDITOR’, ‘IMAGE_EDITOR’, ‘SEQUENCE_EDITOR’, ‘CLIP_EDITOR’,'
-                  ' ‘TEXT_EDITOR’, ‘NODE_EDITOR’, ‘LOGIC_EDITOR’, ‘PROPERTIES’,'
-                  ' ‘OUTLINER’, ‘USER_PREFERENCES’, ‘INFO’, ‘FILE_BROWSER’,'
-                  ' ‘CONSOLE’')
+    # This one should deal with both creating and displaying set number of
+    # bindings, but couldn't get all values to initialize at same time.
+    bindings_number = bpy.props.IntProperty(name="Bindings number",
+                                            default=1,
+                                            soft_min=1)
 
-    cmode_desc = ('Mode in which this key binding is to be used in for ex: '
-                  '"EDIT_MESH". Can be left empty, in which case this key binding'
-                  'would not be dependent on current mode. \nAvailible modes:'
-                  ' ‘EDIT_MESH’, ‘EDIT_CURVE’, ‘EDIT_SURFACE’, ‘EDIT_TEXT’,'
-                  ' ‘EDIT_ARMATURE’, ‘EDIT_METABALL’, ‘EDIT_LATTICE’, ‘POSE’,'
-                  ' ‘SCULPT’, ‘PAINT_WEIGHT’, ‘PAINT_VERTEX’, ‘PAINT_TEXTURE’,'
-                  ' ‘PARTICLE’, ‘OBJECT’')
+    # Preinitialize all the bindings. This ideally should be bound by
+    # bindings_number but couldn't get it to work.
+    for i in range(BINDINGS_MAX):
+        exec('kstr{} = bpy.props.StringProperty(name="Key string",\
+                                                description=KEYSTR_DESC)'
+             .format(i))
+        exec('func{} = bpy.props.StringProperty(name="Function",\
+                                                description=FUNC_DESC)'
+             .format(i))
+        exec('ctype{} = bpy.props.EnumProperty(items=CTYPE_ENUM,\
+                                               name="Context area type",\
+                                               description=CTYPE_DESC),\
+                                               default=""'
+             .format(i))
+        exec('cmode{} = bpy.props.EnumProperty(items=CMODE_ENUM,\
+                                               name="Context mode",\
+                                               description=CTYPE_DESC)\
+                                               default=""'
+             .format(i))
 
-    bindnum = BINDINGS_NUMBER
-
-    for i in range(bindnum):
-        exec('kstr{} = StringProperty(name="Key string",\
-                                      description=keystr_desc)'.format(i))
-        exec('func{} = StringProperty(name="Function",\
-                                      description=func_desc)'.format(i))
-        exec('ctype{} = StringProperty(name="Context area type",\
-                                       description=ctype_desc)'.format(i))
-        exec('cmode{} = StringProperty(name="Context mode",\
-                                       description=ctype_desc)'.format(i))
 
     def draw(self, context):
         layout = self.layout
         layout.label(text='Leader Key Preferences')
-        for i in range(self.bindnum):
+        layout.prop(self, "bindings_number")
+        layout.prop(self, "timeout")
+        layout.prop(self, "time_for_next")
+        for i in range(self.bindings_number):
             layout.label(text="Binding {}".format(i))
             layout.prop(self, "kstr{}".format(i))
             layout.prop(self, "func{}".format(i))
             layout.prop(self, "ctype{}".format(i))
             layout.prop(self, "cmode{}".format(i))
 
-
-
-CTYPE_ENUM = ['VIEW_3D', 'TIMELINE', 'GRAPH_EDITOR', 'DOPESHEET_EDITOR',
-              'NLA_EDITOR', 'IMAGE_EDITOR', 'SEQUENCE_EDITOR', 'CLIP_EDITOR',
-              'TEXT_EDITOR', 'NODE_EDITOR', 'LOGIC_EDITOR', 'PROPERTIES',
-              'OUTLINER', 'USER_PREFERENCES', 'INFO', 'FILE_BROWSER',
-              'CONSOLE']
-
-CMODE_ENUM = ['EDIT_MESH', 'EDIT_CURVE', 'EDIT_SURFACE', 'EDIT_TEXT',
-              'EDIT_ARMATURE', 'EDIT_METABALL', 'EDIT_LATTICE', 'POSE',
-              'SCULPT', 'PAINT_WEIGHT', 'PAINT_VERTEX', 'PAINT_TEXTURE',
-              'PARTICLE', 'OBJECT']
 
 EVENTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
           'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'ZERO',
@@ -213,14 +257,15 @@ EVENTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
           'NDOF_BUTTON_7', 'NDOF_BUTTON_8', 'NDOF_BUTTON_9', 'NDOF_BUTTON_10',
           'NDOF_BUTTON_A', 'NDOF_BUTTON_B', 'NDOF_BUTTON_C']
 
+
 def register():
-    bpy.utils.register_class(LeaderKey)
     bpy.utils.register_class(LeaderKeyPreferences)
+    bpy.utils.register_class(LeaderKey)
 
 def unregister():
     bpy.utils.unregister_class(LeaderKey)
     bpy.utils.unregister_class(LeaderKeyPreferences)
 
+
 if __name__ == '__main__':
-    unregister()
     register()
