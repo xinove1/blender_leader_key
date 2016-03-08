@@ -58,16 +58,16 @@ class LeaderKey(bpy.types.Operator):
                                  cmode=self.context_mode)
         if not func:
             func = self.bindings.get(kstr=self.key_string,
-                                     ctype='',
+                                     ctype='All',
                                      cmode=self.context_mode)
         if not func:
             func = self.bindings.get(kstr=self.key_string,
                                      ctype=self.context_type,
-                                     cmode='')
+                                     cmode='All')
         if not func:
             func = self.bindings.get(kstr=self.key_string,
-                                     ctype='',
-                                     cmode='')
+                                     ctype='All',
+                                     cmode='All')
 
         if func and time() - self.timestart >= self.timeout:
             exec(func)
@@ -86,8 +86,8 @@ class Bindings:
     def append(self,
                kstr,
                func,
-               ctype='',
-               cmode=''):
+               ctype='All',
+               cmode='All'):
         """
         Append binding for key combination string 'kstr' and bind it with
         function 'func'.
@@ -104,7 +104,7 @@ class Bindings:
         else:
             self._bindings[ctype] = {cmode: {kstr: func}}
 
-    def get(self, kstr, ctype='', cmode=''):
+    def get(self, kstr, ctype='All', cmode='All'):
         """
         Get function for key_string 'kstr' bound by context type and mode:
         'ctype', 'cmode'
@@ -132,7 +132,7 @@ CTYPE_ENUM = [('VIEW_3D', 'VIEW_3D', ''),
               ('INFO', 'INFO', ''),
               ('FILE_BROWSER', 'FILE_BROWSER', ''),
               ('CONSOLE', 'CONSOLE', ''),
-              ('', '', '')]
+              ('All', 'All', '')]
 
 CMODE_ENUM = [('EDIT_MESH', 'EDIT_MESH', ''),
               ('EDIT_CURVE', 'EDIT_CURVE', ''),
@@ -148,7 +148,7 @@ CMODE_ENUM = [('EDIT_MESH', 'EDIT_MESH', ''),
               ('PAINT_TEXTURE', 'PAINT_TEXTURE', ''),
               ('PARTICLE', 'PARTICLE', ''),
               ('OBJECT', 'OBJECT', ''),
-              ('', '', '')]
+              ('All', 'All', '')]
 
 KEYSTR_DESC = ('String of characters to be used as key binding. For ex: '
                '"A B C" would mean that after pressing leader key pressing'
@@ -189,27 +189,28 @@ class LeaderKeyPreferences(bpy.types.AddonPreferences):
     # bindings, but couldn't get all values to initialize at same time.
     bindings_number = bpy.props.IntProperty(name="Bindings number",
                                             default=1,
-                                            soft_min=1)
+                                            soft_min=1,
+                                            soft_max=BINDINGS_MAX)
 
     # Preinitialize all the bindings. This ideally should be bound by
     # bindings_number but couldn't get it to work.
     for i in range(BINDINGS_MAX):
-        exec('kstr{} = bpy.props.StringProperty(name="Key string",\
-                                                description=KEYSTR_DESC)'
-             .format(i))
-        exec('func{} = bpy.props.StringProperty(name="Function",\
-                                                description=FUNC_DESC)'
-             .format(i))
-        exec('ctype{} = bpy.props.EnumProperty(items=CTYPE_ENUM,\
-                                               name="Context area type",\
-                                               description=CTYPE_DESC),\
-                                               default=""'
-             .format(i))
-        exec('cmode{} = bpy.props.EnumProperty(items=CMODE_ENUM,\
-                                               name="Context mode",\
-                                               description=CTYPE_DESC)\
-                                               default=""'
-             .format(i))
+        exec(('kstr{}'
+              ' = bpy.props.StringProperty(name="Key String"'
+              ' ,description=KEYSTR_DESC)').format(i))
+        exec(('func{}'
+              ' = bpy.props.StringProperty(name="Function",'
+              ' description=FUNC_DESC)').format(i))
+        exec(('ctype{}'
+              ' = bpy.props.EnumProperty(items=CTYPE_ENUM,'
+              ' name="Context area type",'
+              ' description=CTYPE_DESC,'
+              ' default="All")').format(i))
+        exec(('cmode{}'
+              ' = bpy.props.EnumProperty(items=CMODE_ENUM,'
+              ' name="Context mode",'
+              ' description=CTYPE_DESC,'
+              ' default="All")').format(i))
 
 
     def draw(self, context):
@@ -265,7 +266,3 @@ def register():
 def unregister():
     bpy.utils.unregister_class(LeaderKey)
     bpy.utils.unregister_class(LeaderKeyPreferences)
-
-
-if __name__ == '__main__':
-    register()
