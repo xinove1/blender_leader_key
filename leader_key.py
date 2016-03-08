@@ -139,7 +139,7 @@ class LeaderKey(bpy.types.Operator):
                                      ctype='All',
                                      cmode='All')
 
-        if func and time() - self.timestart >= self.timeout:
+        if func and time() - self.timestart >= self.timenext:
             exec(func)
             return {'FINISHED'}
 
