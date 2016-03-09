@@ -1,5 +1,7 @@
 # Vim like 'leader' key functionality for blender.
 
+![alt text](https://raw.githubusercontent.com/miniukof/bl-leader_key/master/usage_example.gif "Example")
+
 In my workflow I use a lot of shortcuts, so much in fact that now I can't really find empty slots for new bindings. So I looked to other software that I love and use a lot of hotkeys in: Vim. In Vim shortcuts can be specified as list of keys for ex: 
 ```vim 
 nnoremap <leader>cf :call_function()<CR>
@@ -14,17 +16,19 @@ In User Preferences window go to the Add-ons tab, in lower left corner select "I
 
 ## Leading Key (add-on key-binding)
 
-I personally am not a fun of add-on that register keyboard shortcuts for themselves. So I left that for user choice. Function call for starting add-on is `ui.leaderkey`, which if you are familiar of how to create blender keyboard shortcuts should be enough information and can skip to next section.
+I personally am not a fun of add-on that register keyboard shortcuts for themselves. So I left that for user choice. Function call for starting add-on is `ui.leaderkey`.
 
-Otherwise quick instructions on how to create keyboard bindings in blender.
+Quick instructions on how to create keyboard bindings in blender.
 
 Go to the Input tab in User Preferences select context in which that shortcut is to be bound to. In case of this add-on it's best to select something pretty high like Screen so you can call it whether you are in 3D View or Node Editor.
 
-Go through context options till you get to the "Add New" button. Click it. It will create new shortcut with most of the options pretty self-explanatory. Type `ui.leaderkey` in the "Identifier of operator to call on input event" field, and you're done.
+Go through context options till you get to the "Add New" button. Click it. It will create new shortcut with most of the options pretty self-explanatory. Type `ui.leaderkey` in the `Identifier of operator to call on input event` field, and you're done.
 
-## Rest of Configuration
+## Preferences
 
-All the configuration options for add-on are available in Add-ons tab of User Preferences window.
+All the preferences for add-on are available in Add-ons tab of User Preferences window.
+
+![alt text](https://raw.githubusercontent.com/miniukof/bl-leader_key/master/add-on_preferences.jpeg "Add-on Preferences")
 
 "Bindings number" - Tells how many bindings you want to show up in options and be used when calling the `ui.leaderkey` function.
 
