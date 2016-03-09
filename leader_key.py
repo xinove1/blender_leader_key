@@ -240,8 +240,9 @@ class LeaderKeyPreferences(bpy.types.AddonPreferences):
             layout.label(text="Binding {}".format(i))
             layout.prop(self, "kstr{}".format(i))
             layout.prop(self, "func{}".format(i))
-            layout.prop(self, "ctype{}".format(i))
-            layout.prop(self, "cmode{}".format(i))
+            row = layout.row()
+            row.prop(self, "ctype{}".format(i))
+            row.prop(self, "cmode{}".format(i))
 
 
 def register():
