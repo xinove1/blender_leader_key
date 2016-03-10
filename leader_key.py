@@ -8,7 +8,7 @@ bl_info = {
                      'or access through search menu.'),
     'description' : 'Vim like <leader> key functionality for blender',
     'author'      : 'Adam Wolski(miniukof@gmail.com)',
-    'wiki_url'    : 'https://github.com/miniukof/leader_key-bl',
+    'wiki_url'    : 'https://github.com/miniukof/bl-leader_key',
     'version'     : (0, 0, 1),
     'blender'     : (2, 76, 11),
     'category'    : 'User Interface',
