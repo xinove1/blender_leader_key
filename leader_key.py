@@ -103,11 +103,20 @@ class LeaderKey(bpy.types.Operator):
     bl_idname = 'ui.leaderkey'
     bl_label = 'Launch leader key'
 
+    # Timer from blender so modal method updates on 'TIMER' events
+    _timer = None
+    key_string = ''
+    timeout = 0
+    timenext = 0
+    timestart = 0
+    binding = None
+
+    def execute(self, context):
+        return self.invoke(context, None)
+
     def invoke(self, context, event):
         addon_prefs = context.user_preferences.addons[__name__].preferences
         self.key_string = ''
-        self.context_type = context.area.type
-        self.context_mode = context.mode
         self.timeout = addon_prefs.timeout
         self.timenext = addon_prefs.time_for_next
         self.bindings = Bindings()
@@ -116,34 +125,41 @@ class LeaderKey(bpy.types.Operator):
                   '{0}.func{1}, {0}.ctype{1}, {0}.cmode{1})'
                  ).format('addon_prefs', i))
         self.timestart = time()
+        wm = context.window_manager
+        self._timer = wm.event_timer_add(0.001, context.window)
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
+        if event.type == 'ESC':
+            return {'CANCELLED'}
         if event.type in EVENTS and event.value == 'PRESS':
             self.key_string += event.type + ' '
 
+        # Go through possible functions trying different contexts.
+        # Try first with current context and then try to find functions
+        # that are correct for all contexts.
         func = self.bindings.get(kstr=self.key_string,
-                                 ctype=self.context_type,
-                                 cmode=self.context_mode)
+                                 ctype=context.area.type,
+                                 cmode=context.mode)
         if not func:
             func = self.bindings.get(kstr=self.key_string,
                                      ctype='All',
-                                     cmode=self.context_mode)
+                                     cmode=context.mode)
         if not func:
             func = self.bindings.get(kstr=self.key_string,
-                                     ctype=self.context_type,
+                                     ctype=context.area.type,
                                      cmode='All')
         if not func:
             func = self.bindings.get(kstr=self.key_string,
                                      ctype='All',
                                      cmode='All')
 
-        if func and time() - self.timestart >= self.timenext:
+        if func and (time() - self.timestart) >= self.timenext:
             exec(func)
             return {'FINISHED'}
 
-        if time() - self.timestart >= self.timeout:
+        if (time() - self.timestart) >= self.timeout:
             return {'FINISHED'}
 
         return {'RUNNING_MODAL'}
