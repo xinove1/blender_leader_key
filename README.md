@@ -1,6 +1,6 @@
 # Vim like 'leader' key functionality for blender.
 
-![alt text](https://raw.githubusercontent.com/miniukof/bl-leader_key/master/usage_example.gif "Example")
+![alt text](http://i.imgur.com/eppBtCH.gif "Example")
 
 In my workflow I use a lot of shortcuts, so much in fact that now I can't really find empty slots for new bindings. So I looked to other software that I love and use a lot of hotkeys in: Vim. In Vim shortcuts can be specified as sequence of keys. For example: 
 ```vim 
@@ -30,7 +30,7 @@ To add shortcut in blender:
 
 All the preferences for add-on are available in Add-ons tab of User Preferences window.
 
-![alt text](https://raw.githubusercontent.com/miniukof/bl-leader_key/master/add-on_preferences.jpeg "Add-on Preferences")
+![alt text](http://i.imgur.com/AVDuwCN.jpg "Add-on Preferences")
 
 * `Bindings number` - Number of bindings you want to use.
 
