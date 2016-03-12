@@ -132,6 +132,7 @@ class LeaderKey(bpy.types.Operator):
 
     def modal(self, context, event):
         if event.type == 'ESC':
+            context.area.header_text_set()
             return {'CANCELLED'}
         if event.type in EVENTS and event.value == 'PRESS':
             self.key_string += event.type + ' '
@@ -155,11 +156,15 @@ class LeaderKey(bpy.types.Operator):
                                      ctype='All',
                                      cmode='All')
 
+        context.area.header_text_set(self.key_string)
+
         if func and (time() - self.timestart) >= self.timenext:
             exec(func)
+            context.area.header_text_set()
             return {'FINISHED'}
 
         if (time() - self.timestart) >= self.timeout:
+            context.area.header_text_set()
             return {'FINISHED'}
 
         return {'RUNNING_MODAL'}
