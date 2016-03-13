@@ -12,7 +12,8 @@ Thats the functionality I tried to replicate in this add-on.
 
 # Installation
 
-In User Preferences window go to the Add-ons tab, in lower left corner select "Install from File" button and point it to the `leader_key.py` file.
+Download repository as zip file.
+In User Preferences window go to the Add-ons tab, in lower left corner select "Install from File" button and point it to the add-on zip.
 
 # Configuration
 

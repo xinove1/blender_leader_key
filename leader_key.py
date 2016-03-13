@@ -1,20 +1,6 @@
 from time import time
 import bpy
 
-
-bl_info = {
-    'name'        : 'Leader Key',
-    'location'    : ('Add shortcut to ui.leaderkey '
-                     'or access through search menu.'),
-    'description' : 'Vim like <leader> key functionality for blender',
-    'author'      : 'Adam Wolski(miniukof@gmail.com)',
-    'wiki_url'    : 'https://github.com/miniukof/bl-leader_key',
-    'version'     : (0, 0, 1),
-    'blender'     : (2, 76, 11),
-    'category'    : 'User Interface',
-}
-
-
 # Haven't found good way for dynamically creating settings in user-prefs.
 # So on start create fixed number of properties.
 BINDINGS_MAX = 25
@@ -115,7 +101,7 @@ class LeaderKey(bpy.types.Operator):
         return self.invoke(context, None)
 
     def invoke(self, context, event):
-        addon_prefs = context.user_preferences.addons[__name__].preferences
+        addon_prefs = context.user_preferences.addons[__package__].preferences
         self.key_string = ''
         self.timeout = addon_prefs.timeout
         self.timenext = addon_prefs.time_for_next
@@ -207,7 +193,7 @@ class Bindings:
 
 
 class LeaderKeyPreferences(bpy.types.AddonPreferences):
-    bl_idname = __name__
+    bl_idname = __package__
 
     timeout = \
         bpy.props.FloatProperty(name="Timeout",
@@ -264,12 +250,3 @@ class LeaderKeyPreferences(bpy.types.AddonPreferences):
             row = layout.row()
             row.prop(self, "ctype{}".format(i))
             row.prop(self, "cmode{}".format(i))
-
-
-def register():
-    bpy.utils.register_class(LeaderKeyPreferences)
-    bpy.utils.register_class(LeaderKey)
-
-def unregister():
-    bpy.utils.unregister_class(LeaderKey)
-    bpy.utils.unregister_class(LeaderKeyPreferences)
