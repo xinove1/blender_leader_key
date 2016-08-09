@@ -50,3 +50,11 @@ All the preferences for add-on are available in Add-ons tab of User Preferences 
 # Usage
 
 Call the `ui.leaderkey` function and start typing your sequence, after you're done function you specified will be called.
+
+# Tips
+
+Calling some of the blender functions isn't that obvious so here are some tips for common functions you would want to call.
+
+* To call pie menu use `bpy.ops.wm.call_menu_pie(name="pie_menu_name")` where `pie_menu_name` is `bl_idname` of that pie menu so for example `ui.screen_pie_menu`
+
+* To call most other functions start with `bpy.ops.` so for example calling `bpy.types.Operator` function with `bl_idname` of `mesh.some_operation` you would call `bpy.ops.mesh.some_operation()`
