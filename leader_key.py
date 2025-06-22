@@ -101,7 +101,7 @@ class LeaderKey(bpy.types.Operator):
         return self.invoke(context, None)
 
     def invoke(self, context, event):
-        addon_prefs = context.user_preferences.addons[__package__].preferences
+        addon_prefs = bpy.context.preferences.addons[__package__].preferences
         self.key_string = ''
         self.timeout = addon_prefs.timeout
         self.timenext = addon_prefs.time_for_next
@@ -112,13 +112,13 @@ class LeaderKey(bpy.types.Operator):
                  ).format('addon_prefs', i))
         self.timestart = time()
         wm = context.window_manager
-        self._timer = wm.event_timer_add(0.001, context.window)
+        self._timer = wm.event_timer_add(0.001, window=context.window)
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
         if event.type == 'ESC':
-            context.area.header_text_set()
+            context.area.header_text_set(None)
             return {'CANCELLED'}
         if event.type in EVENTS and event.value == 'PRESS':
             self.key_string += event.type + ' '
@@ -146,11 +146,11 @@ class LeaderKey(bpy.types.Operator):
 
         if func and (time() - self.timestart) >= self.timenext:
             exec(func)
-            context.area.header_text_set()
+            context.area.header_text_set(None)
             return {'FINISHED'}
 
         if (time() - self.timestart) >= self.timeout:
-            context.area.header_text_set()
+            context.area.header_text_set(None)
             return {'FINISHED'}
 
         return {'RUNNING_MODAL'}
@@ -195,15 +195,13 @@ class Bindings:
 class LeaderKeyPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
-    timeout = \
-        bpy.props.FloatProperty(name="Timeout",
+    timeout : bpy.props.FloatProperty(name="Timeout",
                                 description=("Amount of time for typing keys. "
                                              "In seconds."),
                                 default=1.0,
                                 soft_min=0.01)
 
-    time_for_next = \
-        bpy.props.FloatProperty(name="Wait for next",
+    time_for_next : bpy.props.FloatProperty(name="Wait for next",
                                 description=("Amount of time for which to wait"
                                              " for next key if matching key is"
                                              " already found. In seconds."),
@@ -212,7 +210,7 @@ class LeaderKeyPreferences(bpy.types.AddonPreferences):
 
     # This one should deal with both creating and displaying set number of
     # bindings, but couldn't get all values to initialize at same time.
-    bindings_number = bpy.props.IntProperty(name="Bindings number",
+    bindings_number : bpy.props.IntProperty(name="Bindings number",
                                             default=1,
                                             soft_min=1,
                                             soft_max=BINDINGS_MAX)
@@ -221,18 +219,18 @@ class LeaderKeyPreferences(bpy.types.AddonPreferences):
     # bindings_number but couldn't get it to work.
     for i in range(BINDINGS_MAX):
         exec(('kstr{}'
-              ' = bpy.props.StringProperty(name="Key String",'
+              ' : bpy.props.StringProperty(name="Key String",'
               'description=KEYSTR_DESC)').format(i))
         exec(('func{}'
-              ' = bpy.props.StringProperty(name="Function",'
+              ' : bpy.props.StringProperty(name="Function",'
               'description=FUNC_DESC)').format(i))
         exec(('ctype{}'
-              ' = bpy.props.EnumProperty(items=CTYPE_ENUM,'
+              ' : bpy.props.EnumProperty(items=CTYPE_ENUM,'
               'name="Context area type",'
               'description=CTYPE_DESC,'
               'default="All")').format(i))
         exec(('cmode{}'
-              ' = bpy.props.EnumProperty(items=CMODE_ENUM,'
+              ' : bpy.props.EnumProperty(items=CMODE_ENUM,'
               'name="Context mode",'
               'description=CTYPE_DESC,'
               'default="All")').format(i))
@@ -250,3 +248,15 @@ class LeaderKeyPreferences(bpy.types.AddonPreferences):
             row = layout.row()
             row.prop(self, "ctype{}".format(i))
             row.prop(self, "cmode{}".format(i))
+
+def register():
+    bpy.utils.register_class(LeaderKey)
+    bpy.utils.register_class(LeaderKeyPreferences)
+
+def unregister():
+    bpy.utils.unregister_class(LeaderKey)
+    bpy.utils.unregister_class(LeaderKeyPreferences)
+
+
+#if __name__ == "__main__":
+#    register()
