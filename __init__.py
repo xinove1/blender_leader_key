@@ -1,11 +1,16 @@
 import bpy
 
-from . import leader_key
+if "leader_key" in locals():
+    import importlib
+    importlib.reload(leader_key)
+    print("leadker_key: reloaded")
+else:
+    from . import leader_key
 
 def register():
     leader_key.register()
-    #bpy.utils.register_module(__name__)
+    print("leadker_key: registred")
 
 def unregister():
     leader_key.unregister()
-    #bpy.utils.unregister_module(__name__)
+    print("leadker_key: unregistred")

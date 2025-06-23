@@ -1,5 +1,6 @@
 from time import time
 import bpy
+import tomllib
 
 # Haven't found good way for dynamically creating settings in user-prefs.
 # So on start create fixed number of properties.
@@ -95,7 +96,6 @@ class LeaderKey(bpy.types.Operator):
     timeout = 0
     timenext = 0
     timestart = 0
-    binding = None
 
     def execute(self, context):
         return self.invoke(context, None)
@@ -105,11 +105,13 @@ class LeaderKey(bpy.types.Operator):
         self.key_string = ''
         self.timeout = addon_prefs.timeout
         self.timenext = addon_prefs.time_for_next
-        self.bindings = Bindings()
-        for i in range(addon_prefs.bindings_number):
-            exec(('self.bindings.append({0}.kstr{1},'
-                  '{0}.func{1}, {0}.ctype{1}, {0}.cmode{1})'
-                 ).format('addon_prefs', i))
+        self.bindings = register_bindings_file()
+        #self.bindings = Bindings()
+        #for i in range(addon_prefs.bindings_number):
+        #    exec(('self.bindings.append({0}.kstr{1},'
+        #          '{0}.func{1}, {0}.ctype{1}, {0}.cmode{1})'
+        #         ).format('addon_prefs', i))
+        self.bindings.print_all()
         self.timestart = time()
         wm = context.window_manager
         self._timer = wm.event_timer_add(0.001, window=context.window)
@@ -145,6 +147,7 @@ class LeaderKey(bpy.types.Operator):
         context.area.header_text_set(self.key_string)
 
         if func and (time() - self.timestart) >= self.timenext:
+            print("leader_key: executing:", func)
             exec(func)
             context.area.header_text_set(None)
             return {'FINISHED'}
@@ -190,10 +193,52 @@ class Bindings:
             return self._bindings[ctype][cmode][kstr.upper().strip()]
         except KeyError:
             return None
+    
+    def print_all(self):
+        print("leader_key: printing registred bindings:")
+        for i in self._bindings:
+            print(self._bindings[i])
+
+class LeaderKeyReloadBindings(bpy.types.Operator):
+    bl_idname = 'ui.leaderkey_reload_bindings'
+    bl_label = 'Reload leader key bindings configuration'
+
+    def execute(self, context):
+        self.register_bindings_file()
+        print(self.Bindings())
+        return { "FINISHED" }
+
+def register_bindings_file():
+    bindings = Bindings()
+    with open("F:/stuff/blender/blender-config/config/leader_key.toml", "rb") as f:
+        data = tomllib.load(f)
+        for i in data:
+            ctype = "All"
+            cmode = "All"
+            if "sequence" not in data[i] or "func" not in data[i]:
+                break
+            if  "ctype" in data[i]:
+                ctype = data[i]["ctype"]
+            if  "cmode" in data[i]:
+                cmode = data[i]["cmode"]
+            bindings.append(data[i]["sequence"], data[i]["func"], ctype, cmode)
+    return bindings
+
+
+def teste():
+    print("oine")
 
 
 class LeaderKeyPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
+
+    use_config_file : bpy.props.BoolProperty(name="Use config file", 
+                                             description="Use a toml file to configure bindings.",
+                                             default=True)
+
+    config_file_location : bpy.props.StringProperty(name="Config file location",
+                                                    description="Config file location, defaults to BLENDER_USER_CONFIG/config/leader_key.toml",
+                                                    default="a")
 
     timeout : bpy.props.FloatProperty(name="Timeout",
                                 description=("Amount of time for typing keys. "
@@ -238,6 +283,8 @@ class LeaderKeyPreferences(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
         layout.label(text="Leader Key Preferences")
+        layout.prop(self, "use_config_file")
+        layout.prop(self, "config_file_location")
         layout.prop(self, "bindings_number")
         layout.prop(self, "timeout")
         layout.prop(self, "time_for_next")
@@ -251,10 +298,12 @@ class LeaderKeyPreferences(bpy.types.AddonPreferences):
 
 def register():
     bpy.utils.register_class(LeaderKey)
+    bpy.utils.register_class(LeaderKeyReloadBindings)
     bpy.utils.register_class(LeaderKeyPreferences)
 
 def unregister():
     bpy.utils.unregister_class(LeaderKey)
+    bpy.utils.unregister_class(LeaderKeyReloadBindings)
     bpy.utils.unregister_class(LeaderKeyPreferences)
 
 
