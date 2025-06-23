@@ -105,13 +105,15 @@ class LeaderKey(bpy.types.Operator):
         self.key_string = ''
         self.timeout = addon_prefs.timeout
         self.timenext = addon_prefs.time_for_next
-        self.bindings = register_bindings_file()
-        #self.bindings = Bindings()
-        #for i in range(addon_prefs.bindings_number):
-        #    exec(('self.bindings.append({0}.kstr{1},'
-        #          '{0}.func{1}, {0}.ctype{1}, {0}.cmode{1})'
-        #         ).format('addon_prefs', i))
-        self.bindings.print_all()
+        if addon_prefs.use_config_file:
+            self.bindings = register_bindings_file()
+        else:
+            self.bindings = Bindings()
+            for i in range(addon_prefs.bindings_number):
+                exec(('self.bindings.append({0}.kstr{1},'
+                      '{0}.func{1}, {0}.ctype{1}, {0}.cmode{1})'
+                     ).format('addon_prefs', i))
+        self.bindings.print_all() # TODO debug info
         self.timestart = time()
         wm = context.window_manager
         self._timer = wm.event_timer_add(0.001, window=context.window)
@@ -147,7 +149,6 @@ class LeaderKey(bpy.types.Operator):
         context.area.header_text_set(self.key_string)
 
         if func and (time() - self.timestart) >= self.timenext:
-            print("leader_key: executing:", func)
             exec(func)
             context.area.header_text_set(None)
             return {'FINISHED'}
@@ -197,8 +198,9 @@ class Bindings:
     def print_all(self):
         print("leader_key: printing registred bindings:")
         for i in self._bindings:
-            print(self._bindings[i])
+            print("\t", self._bindings[i])
 
+# TODO Not working
 class LeaderKeyReloadBindings(bpy.types.Operator):
     bl_idname = 'ui.leaderkey_reload_bindings'
     bl_label = 'Reload leader key bindings configuration'
@@ -223,11 +225,6 @@ def register_bindings_file():
                 cmode = data[i]["cmode"]
             bindings.append(data[i]["sequence"], data[i]["func"], ctype, cmode)
     return bindings
-
-
-def teste():
-    print("oine")
-
 
 class LeaderKeyPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
@@ -285,16 +282,17 @@ class LeaderKeyPreferences(bpy.types.AddonPreferences):
         layout.label(text="Leader Key Preferences")
         layout.prop(self, "use_config_file")
         layout.prop(self, "config_file_location")
-        layout.prop(self, "bindings_number")
         layout.prop(self, "timeout")
         layout.prop(self, "time_for_next")
-        for i in range(self.bindings_number):
-            layout.label(text="Binding {}".format(i))
-            layout.prop(self, "kstr{}".format(i))
-            layout.prop(self, "func{}".format(i))
-            row = layout.row()
-            row.prop(self, "ctype{}".format(i))
-            row.prop(self, "cmode{}".format(i))
+        if self.use_config_file is False:
+            layout.prop(self, "bindings_number")
+            for i in range(self.bindings_number):
+                layout.label(text="Binding {}".format(i))
+                layout.prop(self, "kstr{}".format(i))
+                layout.prop(self, "func{}".format(i))
+                row = layout.row()
+                row.prop(self, "ctype{}".format(i))
+                row.prop(self, "cmode{}".format(i))
 
 def register():
     bpy.utils.register_class(LeaderKey)
@@ -305,7 +303,3 @@ def unregister():
     bpy.utils.unregister_class(LeaderKey)
     bpy.utils.unregister_class(LeaderKeyReloadBindings)
     bpy.utils.unregister_class(LeaderKeyPreferences)
-
-
-#if __name__ == "__main__":
-#    register()
